@@ -1,14 +1,10 @@
 {
-  "builds": [
-    {
-      "src": "backend/main.py",
-      "use": "@vercel/python"
+  "functions": {
+    "backend/main.py": {
+      "runtime": "python3.11"
     }
-  ],
+  },
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "backend/main.py"
-    }
+    { "src": "/(.*)", "dest": "backend/main.py" }
   ]
 }
