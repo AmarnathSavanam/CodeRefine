@@ -6,96 +6,86 @@
     <title>RefactorAI | Intelligent Code Review</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at 50% 0%, #1e293b, #020617);
         }
         .code-font { font-family: 'Fira Code', monospace; }
-        
-        /* Custom scrollbar for textareas/pre tags */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        
+
         .glass-panel {
             background: rgba(15, 23, 42, 0.7);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
         }
     </style>
 </head>
 
 <body class="text-slate-200 min-h-screen">
 
+<!-- LOGIN -->
 <div id="loginCard" class="min-h-screen flex items-center justify-center p-4">
-    <div class="glass-panel p-10 rounded-3xl shadow-2xl w-full max-w-md transition-all">
-        <div class="flex justify-center mb-6">
-            <div class="p-4 bg-indigo-600/20 rounded-2xl">
-                <svg class="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-            </div>
-        </div>
-        <h1 class="text-3xl font-bold text-center mb-2 tracking-tight">CodeGen</h1>
+    <div class="glass-panel p-10 rounded-3xl shadow-2xl w-full max-w-md">
+        <h1 class="text-3xl font-bold text-center mb-2">CodeGen</h1>
         <p class="text-center text-slate-400 mb-8">Elevate your code quality</p>
 
         <div class="space-y-4">
-            <input id="email" type="email" placeholder="Email Address" class="w-full p-4 rounded-xl bg-slate-800/50 border border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-            <input id="password" type="password" placeholder="Password" class="w-full p-4 rounded-xl bg-slate-800/50 border border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-            <button onclick="login()" class="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold transition-all shadow-lg shadow-indigo-500/20">Sign In</button>
+            <input id="email" type="email" placeholder="Email"
+                class="w-full p-4 rounded-xl bg-slate-800 border border-slate-700">
+            <input id="password" type="password" placeholder="Password"
+                class="w-full p-4 rounded-xl bg-slate-800 border border-slate-700">
+            <button onclick="login()" class="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold">
+                Sign In
+            </button>
         </div>
-        <p class="text-center text-xs mt-6 text-slate-500 italic">Demo: demo@coderev.com / password123</p>
+        <p class="text-center text-xs mt-6 text-slate-500 italic">
+            Demo: demo@coderev.com / password123
+        </p>
     </div>
 </div>
 
+<!-- APP -->
 <div id="app" class="hidden flex flex-col min-h-screen">
-    <header class="border-b border-slate-800 p-4 bg-slate-900/50 backdrop-blur-md flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center font-bold">R</div>
-            <span class="font-bold tracking-tight">CodeGen</span>
-        </div>
-        <button onclick="location.reload()" class="text-sm text-slate-400 hover:text-white">Sign Out</button>
+    <header class="border-b border-slate-800 p-4 bg-slate-900/50 flex justify-between">
+        <span class="font-bold">CodeGen</span>
+        <button onclick="location.reload()" class="text-sm text-slate-400">Sign Out</button>
     </header>
 
     <main class="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full">
-        <div class="grid lg:grid-cols-2 gap-8 h-full">
-            
+        <div class="grid lg:grid-cols-2 gap-8">
+
+            <!-- LEFT -->
             <div class="flex flex-col space-y-4">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span> Source Code
-                    </h2>
-                </div>
-                <textarea id="code" 
-                    placeholder="Paste your code here..."
-                    class="flex-1 min-h-[500px] w-full p-6 rounded-2xl bg-slate-900 border border-slate-800 code-font text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none shadow-inner"></textarea>
-                
+                <h2 class="text-lg font-semibold">Source Code</h2>
+                <textarea id="code"
+                    class="min-h-[500px] w-full p-6 rounded-2xl bg-slate-900 border border-slate-800 code-font"></textarea>
+
                 <button onclick="review()" id="reviewBtn"
-                    class="group relative flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-all">
+                    class="w-full py-4 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500">
                     <span id="btnText">Analyze & Refactor</span>
-                    <div id="loader" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
                 </button>
             </div>
 
+            <!-- RIGHT -->
             <div class="flex flex-col space-y-4">
-                <div class="flex items-center gap-4 border-b border-slate-800 pb-2">
-                    <button onclick="switchTab('review')" id="tab-review" class="pb-2 border-b-2 border-indigo-500 font-semibold text-indigo-400">Review Analysis</button>
-                    <button onclick="switchTab('rewrite')" id="tab-rewrite" class="pb-2 border-b-2 border-transparent font-semibold text-slate-500 hover:text-slate-300">Rewritten Code</button>
+                <div class="flex gap-4 border-b border-slate-800 pb-2">
+                    <button onclick="switchTab('review')" id="tab-review"
+                        class="border-b-2 border-indigo-500 text-indigo-400">Review</button>
+                    <button onclick="switchTab('rewrite')" id="tab-rewrite"
+                        class="text-slate-400">Rewrite</button>
                 </div>
 
-                <div class="flex-1 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden relative shadow-inner">
-                    <div id="review-content" class="p-6 h-[500px] overflow-auto">
-                        <div id="output-review" class="text-slate-400 italic">Results will appear here...</div>
-                    </div>
-
-                    <div id="rewrite-content" class="hidden h-[500px] flex flex-col">
-                        <pre class="flex-1 p-6 m-0 overflow-auto"><code id="output-rewrite" class="language-javascript"></code></pre>
-                        <button onclick="copyCode()" class="absolute top-4 right-4 bg-slate-800 p-2 rounded hover:bg-slate-700 text-xs">Copy</button>
-                    </div>
+                <div class="bg-slate-900 rounded-2xl border border-slate-800 h-[500px] overflow-auto p-6">
+                    <div id="output-review">Results will appear here…</div>
+                    <pre id="rewrite-content" class="hidden"><code id="output-rewrite"></code></pre>
                 </div>
             </div>
 
@@ -104,95 +94,61 @@
 </div>
 
 <script>
-    function login() {
-        const email = document.getElementById("email").value;
-        const pass = document.getElementById("password").value;
+/* 🔴 IMPORTANT — PUT YOUR BACKEND URL HERE */
+const API_URL = "https://codereveal-backend.onrender.com/api/review";
 
-        if(email === "demo@coderev.com" && pass === "password123"){
-            document.getElementById("loginCard").classList.add("hidden");
-            document.getElementById("app").classList.remove("hidden");
-        } else {
-            alert("Invalid credentials");
-        }
+/* LOGIN */
+function login() {
+    if(email.value === "demo@coderev.com" && password.value === "password123"){
+        loginCard.classList.add("hidden");
+        app.classList.remove("hidden");
+    } else alert("Invalid credentials");
+}
+
+/* TABS */
+function switchTab(tab){
+    if(tab === "review"){
+        outputReview.style.display = "block";
+        rewriteContent.style.display = "none";
+    } else {
+        outputReview.style.display = "none";
+        rewriteContent.style.display = "block";
+    }
+}
+
+/* REVIEW */
+async function review(){
+    const code = document.getElementById("code").value;
+    if(!code) return alert("Enter code");
+
+    btnText.textContent = "Analyzing…";
+    reviewBtn.disabled = true;
+
+    try{
+        const res = await fetch(API_URL,{
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ code, focus_areas: [] })
+        });
+
+        const data = await res.json();
+
+        document.getElementById("output-review").innerHTML =
+            (data.analysis || "No analysis").replace(/\n/g,"<br>");
+
+        document.getElementById("output-rewrite").textContent =
+            data.rewritten_code || "// No rewrite";
+
+        Prism.highlightAll();
+
+    }catch(e){
+        document.getElementById("output-review").textContent =
+            "Backend connection failed";
     }
 
-    function switchTab(tab) {
-        const revTab = document.getElementById('tab-review');
-        const rewTab = document.getElementById('tab-rewrite');
-        const revCont = document.getElementById('review-content');
-        const rewCont = document.getElementById('rewrite-content');
-
-        if(tab === 'review') {
-            revTab.className = "pb-2 border-b-2 border-indigo-500 font-semibold text-indigo-400";
-            rewTab.className = "pb-2 border-b-2 border-transparent font-semibold text-slate-500 hover:text-slate-300";
-            revCont.classList.remove('hidden');
-            rewCont.classList.add('hidden');
-        } else {
-            rewTab.className = "pb-2 border-b-2 border-indigo-500 font-semibold text-indigo-400";
-            revTab.className = "pb-2 border-b-2 border-transparent font-semibold text-slate-500 hover:text-slate-300";
-            rewCont.classList.remove('hidden');
-            revCont.classList.add('hidden'); // This was logic error in your original idea, fixed below:
-            revCont.classList.add('hidden');
-            rewCont.classList.remove('hidden');
-        }
-    }
-
-    async function review() {
-        const code = document.getElementById("code").value;
-        if(!code) return alert("Please enter some code first.");
-
-        const btn = document.getElementById('reviewBtn');
-        const btnText = document.getElementById('btnText');
-        const loader = document.getElementById('loader');
-
-        // UI Loading State
-        btn.disabled = true;
-        btnText.textContent = "Analyzing...";
-        loader.classList.remove('hidden');
-
-        try {
-            const res = await fetch("/api/review", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, focus_areas: [] })
-            });
-
-            const data = await res.json();
-            
-            // Expected JSON structure: { analysis: "...", rewritten_code: "..." }
-            document.getElementById("output-review").innerHTML = formatAnalysis(data.analysis || "No analysis provided.");
-            
-            const rewriteEl = document.getElementById("output-rewrite");
-            rewriteEl.textContent = data.rewritten_code || "// No rewrite suggested.";
-            
-            // Re-trigger Prism highlighting
-            Prism.highlightElement(rewriteEl);
-            
-            // Auto switch to review tab
-            switchTab('review');
-
-        } catch (err) {
-            document.getElementById("output-review").textContent = "Error connecting to the AI service.";
-        } finally {
-            btn.disabled = false;
-            btnText.textContent = "Analyze & Refactor";
-            loader.classList.add('hidden');
-        }
-    }
-
-    // Helper to make the analysis look nice (basic markdown-like bullets)
-    function formatAnalysis(text) {
-        return text.split('\n').map(line => {
-            if(line.startsWith('-')) return `<li class="ml-4 mb-2 text-slate-300">${line.substring(1)}</li>`;
-            return `<p class="mb-3 text-slate-300">${line}</p>`;
-        }).join('');
-    }
-
-    function copyCode() {
-        const code = document.getElementById("output-rewrite").textContent;
-        navigator.clipboard.writeText(code);
-        alert("Code copied to clipboard!");
-    }
+    btnText.textContent = "Analyze & Refactor";
+    reviewBtn.disabled = false;
+}
 </script>
 
 </body>
