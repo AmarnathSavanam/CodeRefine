@@ -1,139 +1,91 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from groq import Groq
 from dotenv import load_dotenv
-from pathlib import Path
-import os
-import re
-import logging
+import os, json, logging
 
-# ===== Load Environment =====
+# ===== Load env =====
 load_dotenv()
 API_KEY = os.getenv("GROQ_API_KEY")
 
-if not API_KEY:
-    raise RuntimeError("GROQ_API_KEY not found in environment variables")
+client = Groq(api_key=API_KEY) if API_KEY else None
 
-client = Groq(api_key=API_KEY)
-
-# ===== App Init =====
-app = FastAPI(title="AI Code Review API", version="2.0")
-
+app = FastAPI(title="Code Intelligence API", version="3.0")
 logging.basicConfig(level=logging.INFO)
 
-# ===== CORS =====
+# ===== CORS (env driven) =====
+origins = os.getenv("CORS_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to specific domains in production
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ===== Models =====
-class CodeReviewRequest(BaseModel):
+class ReviewRequest(BaseModel):
     code: str = Field(..., min_length=1)
-    focus_areas: list[str] = Field(default_factory=list)
+    focus_areas: list[str] = []
 
-class CodeReviewResponse(BaseModel):
-    analysis: str
+class Issue(BaseModel):
+    severity: str
+    description: str
+    line: int | None = None
+
+class ReviewResponse(BaseModel):
+    issues: list[Issue]
+    risk_score: int
     rewritten_code: str
-    metrics: dict
+    summary: str
 
 # ===== Root =====
 @app.get("/")
 def root():
-    return {"status": "API running", "service": "AI Code Review"}
+    return {"status": "running"}
 
-# ===== Serve Frontend =====
-@app.get("/app", response_class=HTMLResponse)
-def serve_app():
-    html_file = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
-    if not html_file.exists():
-        raise HTTPException(status_code=404, detail="Frontend not found")
-    return HTMLResponse(html_file.read_text(encoding="utf-8"))
+# ===== Endpoint =====
+@app.post("/api/review", response_model=ReviewResponse)
+def review_code(req: ReviewRequest):
+    if not client:
+        raise HTTPException(status_code=503, detail="LLM not configured")
 
-# ===== Metrics Parser =====
-def parse_review_response(review_text: str) -> dict:
-    sections = {
-        "critical": r"Critical Issues:(.*?)(High Priority:|$)",
-        "high": r"High Priority:(.*?)(Medium Priority:|$)",
-        "medium": r"Medium Priority:(.*?)(Low Priority:|$)",
-        "low": r"Low Priority:(.*)"
-    }
+    focus = ", ".join(req.focus_areas) if req.focus_areas else "overall quality"
 
-    def count(pattern):
-        match = re.search(pattern, review_text, re.DOTALL)
-        if not match:
-            return 0
-        return len([l for l in match.group(1).split("\n") if l.strip()])
-
-    return {
-        "critical_count": count(sections["critical"]),
-        "high_count": count(sections["high"]),
-        "medium_count": count(sections["medium"]),
-        "low_count": count(sections["low"]),
-    }
-
-# ===== Review Endpoint =====
-@app.post("/api/review", response_model=CodeReviewResponse)
-def review_code(request: CodeReviewRequest):
-    try:
-        focus_str = ", ".join(request.focus_areas) if request.focus_areas else "general quality"
-
-        analysis_prompt = f"""
+    prompt = f"""
 You are a senior code reviewer.
 
-Analyze the following code focusing on {focus_str}.
+Return ONLY valid JSON with this schema:
+{{
+ "issues":[{{"severity":"critical|high|medium|low","description":"string","line":number|null}}],
+ "risk_score":0-100,
+ "summary":"string",
+ "rewritten_code":"string"
+}}
 
-Return findings strictly in this format:
-
-Critical Issues:
-High Priority:
-Medium Priority:
-Low Priority:
-
-Code:
-{request.code}
-"""
-
-        analysis_res = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            temperature=0.2,
-            max_tokens=1500,
-            messages=[{"role": "user", "content": analysis_prompt}],
-        )
-
-        analysis_text = analysis_res.choices[0].message.content or ""
-
-        rewrite_prompt = f"""
-Rewrite the following code fixing bugs, improving readability,
-and following best practices. Return ONLY code.
+Focus on: {focus}
 
 Code:
-{request.code}
+{req.code}
 """
 
-        rewrite_res = client.chat.completions.create(
+    try:
+        res = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            temperature=0.2,
-            max_tokens=1500,
-            messages=[{"role": "user", "content": rewrite_prompt}],
+            temperature=0.1,
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
         )
 
-        rewritten_code = (rewrite_res.choices[0].message.content or "").strip()
-        metrics = parse_review_response(analysis_text)
+        content = res.choices[0].message.content
+        data = json.loads(content)
 
-        logging.info("Review completed successfully")
+        logging.info("Review generated")
 
-        return CodeReviewResponse(
-            analysis=analysis_text,
-            rewritten_code=rewritten_code,
-            metrics=metrics
-        )
+        return data
 
-    except Exception as e:
-        logging.exception("Review failed")
-        raise HTTPException(status_code=500, detail="Internal AI processing error")
+    except Exception:
+        logging.exception("LLM failure")
+        raise HTTPException(status_code=500, detail="AI processing error")
